@@ -46,12 +46,16 @@ namespace SpellCastIce
             SetUpSkillButton(IceManager.AbilitiesEnum.IceImbue);
             SetUpSkillButton(IceManager.AbilitiesEnum.IceMergeIce);
             SetUpSkillButton(IceManager.AbilitiesEnum.IceMergeFire);
+            SetUpSkillButton(IceManager.AbilitiesEnum.IceMergeLightning);
+            SetUpSkillButton(IceManager.AbilitiesEnum.IceMergeGrav);
 
             unlockBTN.onClick.AddListener(delegate
             {
                 if (IceManager.UnlockAbility(selectedAbility))
                 {
                     ReloadUnlocks();
+                    this.unlockBTN.interactable = false;
+                    this.unlockBTN.GetComponentInChildren<Text>().text = "Owned";
                 } 
             });
         }

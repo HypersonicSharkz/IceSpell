@@ -55,7 +55,13 @@ namespace SpellCastIce
 
             spawnTime = Time.time;
 
-            item.OnUngrabEvent += Item_OnUngrabEvent1; ;
+            item.OnUngrabEvent += Item_OnUngrabEvent1;
+            item.OnTelekinesisGrabEvent += Item_OnTelekinesisGrabEvent;
+        }
+
+        private void Item_OnTelekinesisGrabEvent(Handle handle, SpellTelekinesis teleGrabber)
+        {
+            spawnTime = Time.time;
         }
 
         private void Item_OnUngrabEvent1(Handle handle, RagdollHand ragdollHand, bool throwing)
@@ -67,7 +73,7 @@ namespace SpellCastIce
         {
             if (Time.time - spawnTime > 5f && !despawning)
             {
-                if (!item.IsHanded())
+                if (!item.IsHanded() && !item.isTelekinesisGrabbed)
                 {
                     despawning = true;
                     item.Despawn();
@@ -137,33 +143,56 @@ namespace SpellCastIce
 
             float animSpeed = Mathf.Lerp(minSlow, maxSlow, energy / 100);
 
-            if (animSpeed == 0)
+            if (animSpeed != 0)
             {
-                targetCreature.brain.instance.Stop();
-            }
+                targetCreature.animator.speed *= (animSpeed / 100);
+                targetCreature.locomotion.speed *= (animSpeed / 100);
+            } else
+            {
+                targetCreature.ragdoll.SetState(Ragdoll.State.Frozen);
+                targetCreature.ragdoll.AddNoStandUpModifier(this);
 
+                targetCreature.brain.Stop();
+            }
+            
 
             /*
-            Color defaultSkinColor = targetCreature.umaCharacter.loadedPreset.skinColor;
-
-            targetCreature.umaCharacter.umaDCS.SetColor("Skin", color, default(Color), 0, true);
-
-            foreach (Material mat in targetCreature.bodyMeshRenderer.materials)
-            {
-                StartCoroutine(SetColorOfMat(mat, duration));
-            }*/
-
             targetCreature.animator.speed *= (animSpeed / 100);
             targetCreature.locomotion.speed *= (animSpeed / 100);
+            */
+
+
+
             yield return new WaitForSeconds(duration);
 
+            /*
             targetCreature.animator.speed = 1;
             targetCreature.locomotion.speed = targetCreature.data.locomotionSpeed;
+
+
 
             if (!targetCreature.brain.instance.isActive)
             {
                 targetCreature.brain.instance.Start();
+            }*/
+
+
+            if (animSpeed != 0)
+            {
+                targetCreature.animator.speed = 1;
+                targetCreature.locomotion.speed = targetCreature.data.locomotionSpeed;
+            } else
+            {
+                if (!targetCreature.isKilled)
+                {
+                    targetCreature.ragdoll.SetState(Ragdoll.State.Destabilized);
+                    targetCreature.ragdoll.RemoveNoStandUpModifier(this);
+
+                    targetCreature.brain.Load(targetCreature.brain.instance.id);
+                }
             }
+
+
 
             effectInstance.Despawn();
 
@@ -176,13 +205,15 @@ namespace SpellCastIce
 
         public void UnFreezeCreature(Creature targetCreature)
         {
-            targetCreature.animator.speed = 1;
-            targetCreature.locomotion.speed = targetCreature.data.locomotionSpeed;
 
-            if (!targetCreature.brain.instance.isActive)
+            if (!targetCreature.isKilled)
             {
-                targetCreature.brain.instance.Start();
+                targetCreature.ragdoll.SetState(Ragdoll.State.Destabilized);
+                targetCreature.ragdoll.RemoveNoStandUpModifier(this);
+
+                targetCreature.brain.Load(targetCreature.brain.instance.id);
             }
+            
 
             effectInstance.Despawn();
         }

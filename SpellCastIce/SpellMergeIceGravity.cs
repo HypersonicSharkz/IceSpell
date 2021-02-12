@@ -23,9 +23,9 @@ namespace SpellCastIce
 		protected EffectData bubbleEffectData;
 
 
-        public override void Init()
+        public override void OnCatalogRefresh()
         {
-            base.Init();
+            base.OnCatalogRefresh();
 			if (bubbleEffectId != null && bubbleEffectId != "")
 			{
 				bubbleEffectData = Catalog.GetData<EffectData>(bubbleEffectId, true);
@@ -57,7 +57,7 @@ namespace SpellCastIce
 						Creature creature = component.ragdollPart.ragdoll.creature;
 						if (creature != Player.currentCreature && !creature.isKilled)
 						{
-							if (creature.animator.speed == 1)
+							if (creature.ragdoll.state != Ragdoll.State.Frozen)
 							{
 								if (!creature.GetComponent<IceSpellMWE>())
 								{

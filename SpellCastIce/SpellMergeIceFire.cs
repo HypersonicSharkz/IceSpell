@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,100 +33,60 @@ namespace SpellCastIce
             }
         }
 
-
-        public override void Merge(bool active)
-        {
-            base.Merge(active);
-            if (active)
-            {
-                if (effectInstance == null)
-                {
-                    effectInstance = effectData.Spawn(mana.mergePoint, true, Array.Empty<Type>());
-                    foreach (Effect effect in effectInstance.effects)
-                    {
-                        if (effect.GetComponent<ParticleSystem>())
-                        {
-                            IceBeamCollision scr = effect.GetComponent<ParticleSystem>().gameObject.AddComponent<IceBeamCollision>();
-                            scr.damage = damage;
-                            scr.force = force;
-                        }
-                    }
-                }
-
-                playing = false;
-            } else
-            {
-                currentCharge = 0f;
-                effectInstance.Stop();
-                playing = false;
-            }
-        }
-
         public override void Update()
         {
             base.Update();
-            if (currentCharge > minCharge)
+            if (currentCharge > minCharge && !playing)
             {
-                if (!playing)
-                {
-                    effectInstance.Play();
-                    effectInstance.SetIntensity(1f);
-                    playing = true;
-                }
-                
+                currentCharge = 0;
+                Fire();
+
+            } else if (playing)
+            {
+                currentCharge = 0;
             }
         }
-    }
 
-    public class IceBeamCollision : MonoBehaviour
-    {
-        public float damage;
-        public float force;
-
-        private ParticleSystem particles;
-        private List<ParticleCollisionEvent> collisionEvents = new List<ParticleCollisionEvent>();
-
-        private void Awake()
+        public async void Fire()
         {
-            particles = gameObject.GetComponent<ParticleSystem>();
-        }
+            playing = true;
+            effectInstance = effectData.Spawn(mana.mergePoint.position, mana.mergePoint.rotation);
+            effectInstance.Play();
 
-        private void OnParticleCollision(GameObject other)
-        {
-            int numCollisionEvents = particles.GetCollisionEvents(other, collisionEvents);
+            await Task.Delay(2300);
 
-            foreach (ParticleCollisionEvent pce in collisionEvents)
+            Collider[] hit = Physics.OverlapCapsule(mana.mergePoint.position, mana.mergePoint.position + (mana.mergePoint.forward * 8f), 0.7f);
+            
+            foreach (Collider collider in hit)
             {
-                Collider collider = pce.colliderComponent as Collider;
-                if (collider)
+                if (collider.attachedRigidbody)
                 {
-                    if (other.GetComponentInParent<Creature>())
-                    {
-                        Creature hitCreature = other.GetComponentInParent<Creature>();
 
-                        if (hitCreature != Player.currentCreature)
+                    if (collider.GetComponentInParent<Creature>())
+                    {
+                        Creature creature = collider.GetComponentInParent<Creature>();
+
+                        if (!creature.isPlayer)
                         {
-                            if (collider.attachedRigidbody)
+                            if (!creature.isKilled)
                             {
-                                Rigidbody rb = collider.attachedRigidbody;
-                                rb.AddForce(pce.velocity * force, ForceMode.Impulse);
+                                creature.ragdoll.SetState(Ragdoll.State.Frozen);
+                                collider.attachedRigidbody.AddForce(mana.mergePoint.forward * 30, ForceMode.Impulse);
+
+                                CollisionInstance l_Dmg = new CollisionInstance(new DamageStruct(DamageType.Energy, damage));
+                                creature.Damage(l_Dmg);
                             }
                         }
-                    }
-                    else if (other.GetComponentInParent<Item>())
-                    {
-                        Item hitItem = other.GetComponentInParent<Item>();
 
-                        if (collider.attachedRigidbody)
-                        {
-                            Rigidbody rb = collider.attachedRigidbody;
-                            rb.AddForce(pce.velocity * force, ForceMode.Impulse);
-                        }
                     }
-
 
                 }
             }
+
+            await Task.Delay(2300);
+
+            effectInstance.Stop();
+            playing = false;
         }
     }
 }

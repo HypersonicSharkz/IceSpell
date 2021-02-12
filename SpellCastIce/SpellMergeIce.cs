@@ -58,7 +58,7 @@ namespace SpellCastIce
 
             for (int i = 1; i <= spikeAmount; i++)
             {
-                Catalog.GetData<ItemPhysic>("IceSpike", true).SpawnAsync(delegate (Item iceSpike){
+                Catalog.GetData<ItemData>("IceSpike", true).SpawnAsync(delegate (Item iceSpike){
                     iceSpike.transform.position = mana.mergePoint.position;
 
                     iceSpike.transform.rotation = Quaternion.Euler(0, (360 / spikeAmount) * spikes.Count, 0);
@@ -68,7 +68,7 @@ namespace SpellCastIce
                         item.IgnoreObjectCollision(iceSpike);
                     }
                     iceSpike.IgnoreRagdollCollision(Player.currentCreature.ragdoll);
-                    iceSpike.rb.AddForce(iceSpike.transform.forward * 25f, ForceMode.Impulse);
+                    iceSpike.rb.AddForce(iceSpike.transform.forward * 35f, ForceMode.Impulse);
                     iceSpike.Throw(1f, Item.FlyDetection.Forced);
 
                     spikes.Add(iceSpike);

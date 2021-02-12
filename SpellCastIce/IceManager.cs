@@ -61,26 +61,57 @@ namespace SpellCastIce
                 {
                     Catalog.GetData<SpellCastCharge>("IceSpell").imbueEnabled = true;
                 }),
-                new Ability(3, "MergeIceButton", "Ice Imbue", "Merge ice to shoot out a bunch of spikes around you", AbilitiesEnum.IceMergeIce, delegate 
+                new Ability(3, "MergeIceButton", "Ice Blast", "Merge ice to shoot out a bunch of spikes around you", AbilitiesEnum.IceMergeIce, delegate 
                 {
-                    Catalog.GetData<ContainerData>("PlayerDefault").content.Add(new ContainerData.Content(Catalog.GetData<ItemData>("SpellIceMergeItem")));
+                    Debug.Log("MergeIce");
+                    if (Player.local)
+                    {
+                        playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceMergeItem"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceMergeIce"));
+                    }
                     //Player.currentCreature.container.content.Add(new ContainerData.Content(Catalog.GetData<ItemPhysic>("SpellIceMergeItem"), 1, new List<Item.SavedValue>()));
                 }),
                 new Ability(5, "MergeFireButton", "FireIce Beam", "Merge ice and fire to shoot out a burning cold beam of ice", AbilitiesEnum.IceMergeFire, delegate 
                 {
-                    Catalog.GetData<ContainerData>("PlayerDefault").content.Add(new ContainerData.Content(Catalog.GetData<ItemData>("SpellIceFireMergeItem")));
+                    Debug.Log("MergeFire");
+                    if (Player.local)
+                    {
+                        playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceFireMergeItem"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceFireMerge"));
+                    }
+
                 }),
                 new Ability(5, "MergeGravButton", "Ice stasis dome", "Merge ice and gravity to create a freezing sphere around stopping anyone near you", AbilitiesEnum.IceMergeGrav, delegate
                 {
-                    Catalog.GetData<ContainerData>("PlayerDefault").content.Add(new ContainerData.Content(Catalog.GetData<ItemData>("SpellIceMergeGravItem")));
+                    Debug.Log("MergeGrav");
+                    if (Player.local)
+                    {
+                        playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceMergeGravItem"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceGravMerge"));
+                    }
+                }),
+                new Ability(5, "MergeLightningButton", "Charged Ice Shurikens", "Merge to spray out a ton of electric ice shuricens", AbilitiesEnum.IceMergeLightning, delegate
+                {
+                    Debug.Log("MergeLightning");
+                    if (Player.local)
+                    {
+                        playerCreature.container.AddContent(Catalog.GetData<ItemData>("IceLightningMergeItem"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceLightningMerge"));
+                    }
                 })
-
-                
             };
 
             EventManager.onCreatureHit += EventManager_onCreatureHit;
             EventManager.onCreatureKill += EventManager_onCreatureKill;
 
+            
+        }
+
+        public static Creature playerCreature;
+
+        public static void LoadFromSave(Creature creature)
+        {
+            playerCreature = creature;
             if (File.Exists(Path.Combine(Application.streamingAssetsPath, "Mods/IceSpell/Saves/IceStatSave.json")))
             {
                 string json = File.ReadAllText(Path.Combine(Application.streamingAssetsPath, "Mods/IceSpell/Saves/IceStatSave.json"));
@@ -99,16 +130,17 @@ namespace SpellCastIce
                 }
 
                 chargeSpeed = (float)(1f / Math.Pow(1.1f, level));
-                spikeSpeed = (float)(5 + Math.Sqrt(level) / 4 );
-            } else
+                spikeSpeed = (float)(5 + Math.Sqrt(level) / 4);
+            }
+            else
             {
                 SaveToJSON();
             }
-
-            
         }
 
-        public static void EventManager_onCreatureKill(Creature creature, Player player, ref CollisionStruct collisionStruct, EventTime eventTime)
+
+
+        public static void EventManager_onCreatureKill(Creature creature, Player player, CollisionInstance collisionStruct, EventTime eventTime)
         {
             if (collisionStruct.sourceColliderGroup?.collisionHandler?.item?.itemId == "IceSpike")
             {
@@ -121,7 +153,7 @@ namespace SpellCastIce
             }
         }
 
-        public static void EventManager_onCreatureHit(Creature creature, ref CollisionStruct collisionStruct)
+        public static void EventManager_onCreatureHit(Creature creature, CollisionInstance collisionStruct)
         {
             if (collisionStruct.sourceColliderGroup?.collisionHandler?.item?.itemId == "IceSpike")
             {
@@ -134,7 +166,7 @@ namespace SpellCastIce
 
                 if (creature != Player.currentCreature && !creature.isKilled)
                 {
-                    if (creature.animator.speed == 1)
+                    if (creature.ragdoll.state != Ragdoll.State.Frozen)
                     {
                         if (!creature.GetComponent<IceSpellMWE>())
                         {

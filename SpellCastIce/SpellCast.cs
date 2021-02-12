@@ -19,16 +19,18 @@ namespace SpellCastIce
         public override void Init()
         {
             Debug.LogError("Initted");
+            EventManager.onPossess += EventManager_onPossess;
+            IceManager.LoadFromJSON();
 
             base.Init();
         }
 
-        public override void OnCatalogRefresh()
+        private void EventManager_onPossess(Creature creature, EventTime eventTime)
         {
-            base.OnCatalogRefresh();
-            DebugLogConsole.AddCommandStatic("IceStats", "Shows ice stats and unlocks", "IceStats", typeof(SpellCastIce));
+            if (creature.container.contents.Where(c => c.itemData.id == "SpellIceItem").Count() <= 0)
+                creature.container.AddContent(Catalog.GetData<ItemData>("SpellIceItem"));
 
-            IceManager.LoadFromJSON();
+            IceManager.LoadFromSave(creature);
         }
 
         public static void IceStats()
@@ -53,9 +55,7 @@ namespace SpellCastIce
             {
                 PlayerControl.GetHand(this.spellCaster.ragdollHand.side).HapticPlayClip(Catalog.gameData.haptics.telekinesisThrow, 1f);
             }
-            Catalog.GetData<ItemPhysic>("IceSpike", true).SpawnAsync(delegate (Item iceSpike) {
-
-                iceSpike.transform.position = spellCaster.magic.position;
+            Catalog.GetData<ItemData>("IceSpike", true).SpawnAsync(delegate (Item iceSpike) {
 
                 //iceSpike.IgnoreObjectCollision(shooterItem);
                 iceSpike.IgnoreRagdollCollision(spellCaster.mana.creature.ragdoll);
@@ -74,30 +74,48 @@ namespace SpellCastIce
                 }
                 
                 iceSpike.Throw(1f, Item.FlyDetection.Forced);
-            }, null, null, null, false, null);
+            }, spellCaster.magic.position - (spellCaster.magic.forward * 0.5f), null, null, false, null);
         }
 
         private Vector3 AimAssist(Vector3 ownPosition, Vector3 ownDirection, float aimPrecision, float randomness)
         {
+            Creature toHit = null;
+            float closest = -1;
+            Vector3 dirS = Vector3.zero;
+
             foreach (Creature creature in Creature.list)
             {
                 if (creature != Player.currentCreature && !creature.isKilled)
                 {
-                    Vector3 dir = (creature.ragdoll.GetPart(RagdollPart.Type.Torso).transform.position - ownPosition).normalized;
+                    Vector3 dir = (creature.ragdoll.GetPart(RagdollPart.Type.Head).transform.position - ownPosition).normalized;
                     if (Vector3.Dot(ownDirection, dir) > aimPrecision)
                     {
-                        Vector3 rand = UnityEngine.Random.insideUnitSphere * randomness;
-
-                        return (dir + rand).normalized;
+                        if (Vector3.Dot(ownDirection, dir) > closest)
+                        {
+                            closest = Vector3.Dot(ownDirection, dir);
+                            toHit = creature;
+                            dirS = dir;
+                        }
                     }
                 }
             }
-            return ownDirection;
+
+            if (toHit != null)
+            {
+                Vector3 rand = UnityEngine.Random.insideUnitSphere * randomness;
+
+                return (dirS + rand).normalized;
+            } else
+            {
+                return ownDirection;
+            }
+
+            
         }
 
-        public override void OnImbueCollisionStart(ref CollisionStruct collisionInstance)
+        public override void OnImbueCollisionStart(CollisionInstance collisionInstance)
         {
-            base.OnImbueCollisionStart(ref collisionInstance);
+            base.OnImbueCollisionStart(collisionInstance);
             if (collisionInstance.damageStruct.hitRagdollPart)
             {
                 if (collisionInstance.damageStruct.damage > 1)

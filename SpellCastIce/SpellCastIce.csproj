@@ -105,6 +105,7 @@
     <Compile Include="SpellMergeIce.cs" />
     <Compile Include="SpellMergeIceFire.cs" />
     <Compile Include="SpellMergeIceGravity.cs" />
+    <Compile Include="SpellMergeIceLightning.cs" />
     <Compile Include="TestMenu.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
