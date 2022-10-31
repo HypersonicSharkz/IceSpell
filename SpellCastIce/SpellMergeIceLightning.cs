@@ -25,6 +25,11 @@ namespace SpellCastIce
             shuriken = Catalog.GetData<ItemData>("IceShuriken");
         }
 
+        public override IEnumerator OnCatalogRefreshCoroutine()
+        {
+            return base.OnCatalogRefreshCoroutine();
+        }
+
         public override void Merge(bool active)
         {
             base.Merge(active);
@@ -49,9 +54,10 @@ namespace SpellCastIce
                 {
                     foreach (CollisionHandler collisionHandler in item.collisionHandlers)
                     {
-                        collisionHandler.SetPhysicModifier(this, 0, 0f, 1f, -1f, -1f, null);
+                        collisionHandler.SetPhysicModifier(this, 0, 1);
                     }
 
+                    item.rb.useGravity = false;
                     item.rb.AddForce(item.transform.forward * shotSpeed, ForceMode.Impulse);
 
                     item.gameObject.AddComponent<ShurikenItem>().item = item;
@@ -74,7 +80,7 @@ namespace SpellCastIce
             if (collision.gameObject.GetComponentInParent<Creature>())
             {
                 Creature creature = collision.gameObject.GetComponentInParent<Creature>();
-                creature.brain.TryAction(new ActionShock(1f, 0.2f, Catalog.GetData<EffectData>("ImbueLightningRagdoll", true)));
+                creature.TryElectrocute(1f, 0.2f, true, false, Catalog.GetData<EffectData>("ImbueLightningRagdoll", true));
             }
         }
 

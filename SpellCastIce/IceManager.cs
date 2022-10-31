@@ -24,13 +24,6 @@ namespace SpellCastIce
 
     public static class IceManager
     {
-        public enum XPGains
-        {
-            Kill = 10,
-            HeadShot = 5,
-            Hit = 2,
-        }
-
         public static int level = 0;
         public static int levelPoints = 0;
         public static float xp = 0;
@@ -67,7 +60,7 @@ namespace SpellCastIce
                     if (Player.local)
                     {
                         playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceMergeItem"));
-                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceMergeIce"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceMergeIce"), Catalog.GetData<SpellData>("IceMergeIce").level);
                     }
                     //Player.currentCreature.container.content.Add(new ContainerData.Content(Catalog.GetData<ItemPhysic>("SpellIceMergeItem"), 1, new List<Item.SavedValue>()));
                 }),
@@ -77,7 +70,7 @@ namespace SpellCastIce
                     if (Player.local)
                     {
                         playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceFireMergeItem"));
-                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceFireMerge"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceFireMerge"), Catalog.GetData<SpellData>("IceFireMerge").level);
                     }
 
                 }),
@@ -87,7 +80,7 @@ namespace SpellCastIce
                     if (Player.local)
                     {
                         playerCreature.container.AddContent(Catalog.GetData<ItemData>("SpellIceMergeGravItem"));
-                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceGravMerge"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceGravMerge"),Catalog.GetData<SpellData>("IceGravMerge").level);
                     }
                 }),
                 new Ability(5, "MergeLightningButton", "Charged Ice Shurikens", "Merge to spray out a ton of electric ice shuricens", AbilitiesEnum.IceMergeLightning, delegate
@@ -96,7 +89,7 @@ namespace SpellCastIce
                     if (Player.local)
                     {
                         playerCreature.container.AddContent(Catalog.GetData<ItemData>("IceLightningMergeItem"));
-                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceLightningMerge"));
+                        playerCreature.mana.AddSpell(Catalog.GetData<SpellData>("IceLightningMerge"),Catalog.GetData<SpellData>("IceLightningMerge").level);
                     }
                 })
             };
@@ -142,26 +135,33 @@ namespace SpellCastIce
 
         public static void EventManager_onCreatureKill(Creature creature, Player player, CollisionInstance collisionStruct, EventTime eventTime)
         {
+            int xp = 0;
+
             if (collisionStruct.sourceColliderGroup?.collisionHandler?.item?.itemId == "IceSpike")
             {
-                GainXP(XPGains.Kill);
+                xp += 10;
 
                 if (collisionStruct.damageStruct.hitRagdollPart.type == RagdollPart.Type.Head)
                 {
-                    GainXP(XPGains.HeadShot);
+                    xp += 5;
                 }
+
+                xp *= 1 + (int)(Vector3.Distance(creature.transform.position, Player.local.transform.position) / 5f);
+                GainXP(xp);
             }
         }
 
         public static void EventManager_onCreatureHit(Creature creature, CollisionInstance collisionStruct)
         {
+            int xp = 0;
+
             if (collisionStruct.sourceColliderGroup?.collisionHandler?.item?.itemId == "IceSpike")
             {
-                GainXP(XPGains.Hit);
+                xp += 3;
 
                 if (collisionStruct.damageStruct.hitRagdollPart.type == RagdollPart.Type.Head)
                 {
-                    GainXP(XPGains.HeadShot);
+                    xp += 5;
                 }
 
                 if (creature != Player.currentCreature && !creature.isKilled)
@@ -176,12 +176,17 @@ namespace SpellCastIce
                         scr.SlowStartCoroutine(creature, 100f, 0f, 0f, 8f);
                     }
                 }
+
+                xp *= 1 + (int)(Vector3.Distance(creature.transform.position, Player.local.transform.position) / 5f);
+                GainXP(xp);
             }
+
+
         }
 
-        public static void GainXP(XPGains xpAction)
+        public static void GainXP(int _xp)
         {
-            xp += (int)xpAction;
+            xp += _xp;
 
             if (xp >= XpForNextLevel(level))
             {
@@ -306,7 +311,15 @@ namespace SpellCastIce
                     onUnlockEvent.AddListener(onUnlockAction);
                 }
 
-                abilityDict.Add(abilityEnum, this);
+                try
+                {
+                   abilityDict.Add(abilityEnum, this);
+                    
+                } catch
+                {
+
+                }
+                
             }
         }
 

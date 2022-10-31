@@ -40,7 +40,7 @@ namespace SpellCastIce
 			captureTrigger.transform.localPosition = Vector3.zero;
 			captureTrigger.transform.localRotation = Quaternion.identity;
 			captureTrigger.SetCallback(new Trigger.CallBack(this.OnTrigger));
-			captureTrigger.SetLayer(GameManager.GetLayer(LayerName.MovingObject));
+			captureTrigger.SetLayer(GameManager.GetLayer(LayerName.MovingItem));
 			captureTrigger.SetRadius(radius);
 			captureTrigger.SetActive(true);
 		}
@@ -115,7 +115,7 @@ namespace SpellCastIce
 			EffectInstance bubbleEffect = null;
 			if (bubbleEffectData != null)
 			{
-				bubbleEffect = bubbleEffectData.Spawn(captureTrigger.transform.position, Quaternion.identity, null, null, true, Array.Empty<Type>());
+				bubbleEffect = bubbleEffectData.Spawn(captureTrigger.transform, true, null, true, Array.Empty<Type>());
 				bubbleEffect.SetIntensity(0f);
 				bubbleEffect.Play(0);
 			}

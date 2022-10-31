@@ -83,7 +83,7 @@ namespace SpellCastIce
             float closest = -1;
             Vector3 dirS = Vector3.zero;
 
-            foreach (Creature creature in Creature.list)
+            foreach (Creature creature in Creature.all)
             {
                 if (creature != Player.currentCreature && !creature.isKilled)
                 {
@@ -113,9 +113,10 @@ namespace SpellCastIce
             
         }
 
-        public override void OnImbueCollisionStart(CollisionInstance collisionInstance)
+        public override bool OnImbueCollisionStart(CollisionInstance collisionInstance)
         {
             base.OnImbueCollisionStart(collisionInstance);
+
             if (collisionInstance.damageStruct.hitRagdollPart)
             {
                 if (collisionInstance.damageStruct.damage > 1)
@@ -135,6 +136,8 @@ namespace SpellCastIce
                     }
                 }
             }
+
+            return true;
         }
     }
 }

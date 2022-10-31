@@ -47,7 +47,7 @@ namespace SpellCastIce
         private void FireSpikes()
         {
             EffectInstance effectInstance;
-            effectInstance = shotEffectData.Spawn(mana.mergePoint, true, Array.Empty<Type>());
+            effectInstance = shotEffectData.Spawn(mana.mergePoint, true);
 
             effectInstance.SetIntensity(0f);
             effectInstance.Play(0);
