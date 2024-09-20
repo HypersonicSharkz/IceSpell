@@ -11,9 +11,22 @@ namespace SpellCastIce
 {
     class SpellMergeIce : SpellMergeData
     {
-        public float minSpawnAmount;
-        public float maxSpawnAmount;
-        public float shotMinCharge;
+        [ModOption(category = "Ice Nova", name = "Min Spike Count", tooltip = "The amount of spikes to throw when casting Ice Nova at minimum charge")]
+        [ModOptionIntValues(1, 100, 1)]
+        public static int minSpawnAmount = 4;
+
+        [ModOption(category = "Ice Nova", name = "Max Spike Count", tooltip = "The amount of spikes to throw when casting Ice Nova at full charge")]
+        [ModOptionIntValues(1, 100, 1)]
+        public static int maxSpawnAmount = 16;
+
+        [ModOption(category = "Ice Nova", name = "Min Charge", tooltip = "The minimum charge for casting Ice Nova")]
+        [ModOptionFloatValues(0, 1, 0.1f)]
+        public static float shotMinCharge = 0.2f;
+
+        [ModOption(category = "Ice Nova", name = "Spike Force", tooltip = "The speed of the spikes thrown by casting Ice Nova")]
+        [ModOptionFloatValues(0, 200, 1f)]
+        public static float novaForce = 35f;
+
         public string shotEffectId;
 
         protected EffectData shotEffectData;
@@ -68,7 +81,7 @@ namespace SpellCastIce
                         item.IgnoreObjectCollision(iceSpike);
                     }
                     iceSpike.IgnoreRagdollCollision(Player.currentCreature.ragdoll);
-                    iceSpike.rb.AddForce(iceSpike.transform.forward * 35f, ForceMode.Impulse);
+                    iceSpike.physicBody.AddForce(iceSpike.transform.forward * novaForce, ForceMode.Impulse);
                     iceSpike.Throw(1f, Item.FlyDetection.Forced);
 
                     spikes.Add(iceSpike);

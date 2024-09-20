@@ -33,7 +33,7 @@ namespace SpellCastIce
         {
             foreach (CollisionHandler collisionHandler in item.collisionHandlers)
             {
-                if (IceManager.IsAbilityUnlocked(IceManager.AbilitiesEnum.noGravity))
+                if (AbilityManager.IsAbilityUnlocked(AbilityManager.AbilitiesEnum.noGravity))
                 {
                     collisionHandler.SetPhysicModifier(this, 0, 1, 0, 0, -1, null);
                     //item.rb.useGravity = false;
@@ -42,7 +42,7 @@ namespace SpellCastIce
             }
             
 
-            if (!IceManager.IsAbilityUnlocked(IceManager.AbilitiesEnum.pickUpIceSpikes))
+            if (!AbilityManager.IsAbilityUnlocked(AbilityManager.AbilitiesEnum.pickUpIceSpikes))
             {
                 Handle h = item.handles[0];
                 h.enabled = false;
@@ -54,10 +54,10 @@ namespace SpellCastIce
             spawnTime = Time.time;
 
             item.OnUngrabEvent += Item_OnUngrabEvent1;
-            item.OnTelekinesisGrabEvent += Item_OnTelekinesisGrabEvent;
+            item.OnTelekinesisGrabEvent += Item_OnTelekinesisGrabEvent1; ;
         }
 
-        private void Item_OnTelekinesisGrabEvent(Handle handle, SpellTelekinesis teleGrabber)
+        private void Item_OnTelekinesisGrabEvent1(Handle handle, ThunderRoad.Skill.SpellPower.SpellTelekinesis teleGrabber)
         {
             spawnTime = Time.time;
         }
@@ -83,24 +83,30 @@ namespace SpellCastIce
         }
     }
 
+    
     public class IceSpellMWE : MonoBehaviour
     {
         Color color = new Color(.49f, .78f, 1);
         public EffectInstance effectInstance;
 
-        public void SlowStartCoroutine(Creature targetCreature, float energy, float maxSlow, float minSlow, float duration)
+        private bool playing = false;
+
+        public void TrySlow(Creature targetCreature, float energy, float maxSlow, float minSlow, float duration)
         {
+            if (playing)
+                return;
+
             StartCoroutine(SlowCoroutine(targetCreature, energy, maxSlow, minSlow, duration));
         }
 
         IEnumerator SlowCoroutine(Creature targetCreature, float energy, float maxSlow, float minSlow, float duration)
         {
-
             EffectData imbueHitRagdollEffectData = Catalog.GetData<EffectData>("ImbueIceRagdoll", true);
-            effectInstance = imbueHitRagdollEffectData.Spawn(targetCreature.ragdoll.rootPart.transform, true, null, false, Array.Empty<Type>());
+            effectInstance = imbueHitRagdollEffectData.Spawn(targetCreature.ragdoll.rootPart.transform);
             effectInstance.SetRenderer(targetCreature.GetRendererForVFX(), false);
             effectInstance.Play(0);
             effectInstance.SetIntensity(1f);
+            playing = true;
 
             float animSpeed = Mathf.Lerp(minSlow, maxSlow, energy / 100);
 
@@ -154,7 +160,7 @@ namespace SpellCastIce
             }
 
 
-
+            playing = false;
             effectInstance.Despawn();
 
             /*

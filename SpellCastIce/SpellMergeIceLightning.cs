@@ -11,8 +11,13 @@ namespace SpellCastIce
 {
     class SpellMergeIceLightning : SpellMergeData
     {
-        public float fireRate = 2;
-        public float shotSpeed = 5;
+        [ModOption(category = "Ice Shurikens", name = "Fire Rate", tooltip = "Shurikens per second")]
+        [ModOptionFloatValues(0, 50, 1f)]
+        public static float fireRate = 5;
+
+        [ModOption(category = "Ice Shurikens", name = "Shuriken Speed", tooltip = "How fast the shurikens move")]
+        [ModOptionFloatValues(0, 100, 1f)]
+        public static float shotSpeed = 25;
 
         private bool activated;
         private float lastShotTime;
@@ -47,6 +52,9 @@ namespace SpellCastIce
         public override void Update()
         {
             base.Update();
+            if (currentCharge < minCharge)
+                return;
+
             if (activated && Time.time - lastShotTime > 1/fireRate)
             {
                 lastShotTime = Time.time;
@@ -57,14 +65,14 @@ namespace SpellCastIce
                         collisionHandler.SetPhysicModifier(this, 0, 1);
                     }
 
-                    item.rb.useGravity = false;
-                    item.rb.AddForce(item.transform.forward * shotSpeed, ForceMode.Impulse);
+                    item.physicBody.useGravity = false;
+                    item.physicBody.AddForce(item.transform.forward * shotSpeed, ForceMode.Impulse);
 
                     item.gameObject.AddComponent<ShurikenItem>().item = item;
                     item.IgnoreRagdollCollision(mana.creature.ragdoll);
                     item.Throw(1f, Item.FlyDetection.Forced);
 
-                }, mana.mergePoint.position, Quaternion.LookRotation((mana.casterLeft.magic.transform.up + mana.casterRight.magic.transform.up)));
+                }, mana.mergePoint.position, Quaternion.LookRotation((mana.casterLeft.magicSource.transform.up + mana.casterRight.magicSource.transform.up)));
             }
         }
 

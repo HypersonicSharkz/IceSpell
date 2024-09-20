@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ThunderRoad;
 using UnityEngine;
+using static ThunderRoad.Skill.SpellMerge.SpellMergeGravity;
 
 namespace SpellCastIce
 {
@@ -13,12 +14,16 @@ namespace SpellCastIce
 	{
 		public Trigger captureTrigger;
 		public float bubbleMinCharge;
-		public float bubbleDuration;
+
+        [ModOption(category = "Ice Dome", name = "Duration", tooltip = "How long the dome will last in seconds")]
+        [ModOptionFloatValues(0, 60, 1f)]
+        public static float bubbleDuration = 15;
+
 		public string bubbleEffectId;
 		public AnimationCurve bubbleScaleCurveOverTime;
 		public float bubbleEffectMaxScale;
 
-		protected List<CollisionHandler> capturedObjects = new List<CollisionHandler>();
+		protected List<Creature> capturedCreatures = new List<Creature>();
 		protected bool bubbleActive;
 		protected EffectData bubbleEffectData;
 
@@ -29,17 +34,15 @@ namespace SpellCastIce
 			if (bubbleEffectId != null && bubbleEffectId != "")
 			{
 				bubbleEffectData = Catalog.GetData<EffectData>(bubbleEffectId, true);
-				Debug.Log("Got bubble effect DATA");
 			}
 		}
 
         public void StartCapture(float radius)
 		{
 			captureTrigger = new GameObject("IceTrigger").AddComponent<Trigger>();
-			captureTrigger.transform.SetParent(this.mana.mergePoint);
-			captureTrigger.transform.localPosition = Vector3.zero;
-			captureTrigger.transform.localRotation = Quaternion.identity;
-			captureTrigger.SetCallback(new Trigger.CallBack(this.OnTrigger));
+			captureTrigger.transform.position = this.mana.mergePoint.position;
+			captureTrigger.transform.rotation = this.mana.mergePoint.rotation;
+            captureTrigger.SetCallback(new Trigger.CallBack(this.OnTrigger));
 			captureTrigger.SetLayer(GameManager.GetLayer(LayerName.MovingItem));
 			captureTrigger.SetRadius(radius);
 			captureTrigger.SetActive(true);
@@ -55,31 +58,12 @@ namespace SpellCastIce
 					if (enter)
 					{
 						Creature creature = component.ragdollPart.ragdoll.creature;
-						if (creature != Player.currentCreature && !creature.isKilled)
+						if (!capturedCreatures.Contains(creature) && creature != Player.currentCreature && !creature.isKilled)
 						{
-							if (creature.ragdoll.state != Ragdoll.State.Frozen)
-							{
-								if (!creature.GetComponent<IceSpellMWE>())
-								{
-									creature.gameObject.AddComponent<IceSpellMWE>();
-								}
-								IceSpellMWE scr = creature.GetComponent<IceSpellMWE>();
-								scr.SlowStartCoroutine(creature, 100f, 0f, 0f, 50f);
-							}
-						}
-						capturedObjects.Add(component);
+                            creature.Inflict("Freezing", this, float.PositiveInfinity, 200f);
+                            capturedCreatures.Add(creature);
+                        }
 						return;
-						
-					}
-					else
-					{
-						Creature creature = component.ragdollPart.ragdoll.creature;
-						if (creature.GetComponent<IceSpellMWE>())
-                        {
-							IceSpellMWE scr = creature.GetComponent<IceSpellMWE>();
-							scr.UnFreezeCreature(creature);
-						}
-						capturedObjects.Remove(component);
 					}
 				}
 			}
@@ -88,9 +72,8 @@ namespace SpellCastIce
 		public override void Merge(bool active)
 		{
 			base.Merge(active);
-			if (active)
+			if (active || bubbleActive)
 			{
-				StartCapture(0f);
 				return;
 			}
 			Vector3 from = Player.local.transform.rotation * PlayerControl.GetHand(Side.Left).GetHandVelocity();
@@ -111,17 +94,20 @@ namespace SpellCastIce
 		protected IEnumerator BubbleCoroutine(float duration)
 		{
 			bubbleActive = true;
-			StopCapture();
+			capturedCreatures.Clear();
+
+			StartCapture(0f);
+			captureTrigger.transform.SetParent(null);
+
 			EffectInstance bubbleEffect = null;
 			if (bubbleEffectData != null)
 			{
-				bubbleEffect = bubbleEffectData.Spawn(captureTrigger.transform, true, null, true, Array.Empty<Type>());
+				bubbleEffect = bubbleEffectData.Spawn(captureTrigger.transform);
 				bubbleEffect.SetIntensity(0f);
 				bubbleEffect.Play(0);
 			}
 			yield return new WaitForFixedUpdate();
-			StartCapture(0f);
-			captureTrigger.transform.SetParent(null);
+			
 			float startTime = Time.time;
 			while (Time.time - startTime < duration)
 			{
@@ -129,8 +115,8 @@ namespace SpellCastIce
 				{
 					yield break;
 				}
-				float num = bubbleScaleCurveOverTime.Evaluate((Time.time - startTime) / duration);
-				captureTrigger.SetRadius(num * bubbleEffectMaxScale * 0.5f);
+                float num = bubbleScaleCurveOverTime.Evaluate((Time.time - startTime) / duration);
+                captureTrigger.SetRadius(num * bubbleEffectMaxScale * 0.5f);
 				if (bubbleEffect != null)
 				{
 					bubbleEffect.SetIntensity(num);
@@ -149,16 +135,6 @@ namespace SpellCastIce
 		public void StopCapture()
 		{
 			captureTrigger.SetActive(false);
-			for (int i = capturedObjects.Count - 1; i >= 0; i--)
-			{
-				Creature creature = capturedObjects[i].ragdollPart.ragdoll.creature;
-				if (creature.GetComponent<IceSpellMWE>())
-				{
-					IceSpellMWE scr = creature.GetComponent<IceSpellMWE>();
-					scr.UnFreezeCreature(creature);
-				}
-				capturedObjects.RemoveAt(i);
-			}
 			UnityEngine.Object.Destroy(captureTrigger.gameObject);
 		}
 	}
